@@ -32,7 +32,6 @@ class Config:
     global_env: Optional[dict[str, str]]
     clear_env: bool
 
-
 class Image:
     def __lt__(self, other: "Image") -> bool:
         return self.image_full_name() < other.image_full_name()
@@ -181,3 +180,100 @@ git checkout {pr.base.sha} {test_files}
 {copy_commands}
 
 """
+
+class CodeGenImage(Image):
+    def __init__(self, pr: PullRequest, config: Config):
+        self._pr = pr
+        self._config = config
+
+    @property
+    def pr(self) -> PullRequest:
+        return self._pr
+
+    @property
+    def config(self) -> Config:
+        return self._config
+
+    def dependency(self) -> Union[str, "Image"]:
+        return "ubuntu:24.04"
+
+    def image_tag(self) -> str:
+        return "codegen-base"
+
+    def workdir(self) -> str:
+        return "codegen-base"
+
+    def files(self) -> list[File]:
+        prompt = self.pr.prompt or f"Reimplement PR title: {self.pr.title}, body: {self.pr.body}"
+        return [
+            File(
+                ".",
+                "codegen-run.sh",
+                """#!/bin/bash
+set -e
+
+
+echo "GH_TOKEN: $GH_TOKEN"
+cd /home/testrigor-codegen-cli
+mkdir code-gen-logs
+echo "poetry run tr-codegen agent-run --prompt \"{prompt}\" --project-path /home/{pr.repo} --log-path /home/code-gen-logs"
+poetry run tr-codegen agent-run --prompt "{prompt}" --project-path /home/{pr.repo} --log-path /home/code-gen-logs
+cd /home/{pr.repo}
+
+""".format(
+                    pr=self.pr,
+                    prompt=prompt,
+                ),
+            )
+        ]
+
+    def dockerfile(self) -> str:
+        image_name = self.dependency()
+        if isinstance(image_name, Image):
+            image_name = image_name.image_full_name()
+
+        copy_commands = ""
+        for file in self.files():
+            copy_commands += f"COPY {file.name} /home/\n"
+            
+        code = "RUN git clone https://$GH_TOKEN@github.com/MaxwelSant/testrigor-codegen-cli.git /home/testrigor-codegen-cli"
+
+        return f"""FROM {image_name}
+
+{self.global_env}
+
+{copy_commands}
+
+WORKDIR /home/
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install Node.js
+RUN apt-get update && \
+    apt install -y git && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean
+
+# Install Python 3.12 venv + pip
+RUN apt-get install -y python3.12-venv python3-pip
+
+# Create and activate a virtual environment
+RUN python3.12 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+{code}
+
+WORKDIR /home/testrigor-codegen-cli
+
+# Install Poetry
+RUN pip install poetry
+# Configure Poetry to not create a virtual environment
+RUN poetry install
+
+{self.clear_env}
+
+"""
+

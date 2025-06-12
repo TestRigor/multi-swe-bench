@@ -45,7 +45,7 @@ class Instance:
             name = f"{pr.org}/{pr.repo}_{pr.tag}"
         if name in cls._registry:
             return cls._registry[name](pr, config, *args, **kwargs)
-        raise ValueError(f"Instance '{name}' is not registered.")
+        raise ValueError(f"Instance '{name}' is not registered. {cls._registry.keys()}")
 
     def dependency(self) -> "Image":
         raise NotImplementedError

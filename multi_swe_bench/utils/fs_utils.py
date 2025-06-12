@@ -23,6 +23,9 @@ from multi_swe_bench.harness.image import Image
 def copy_source_code(source_code_dir: Path, image: Image, dst_dir: Path):
     source_code_path = source_code_dir / image.pr.org / image.pr.repo
 
+    copy_source_code_path(source_code_path, image, dst_dir)
+
+def copy_source_code_path(source_code_path: Path, image: Image, dst_dir: Path):
     if not source_code_path.exists():
         raise FileNotFoundError(
             f"The source code directory `{source_code_path}` does not exist."

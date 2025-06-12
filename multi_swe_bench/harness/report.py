@@ -95,7 +95,7 @@ class Report(PullRequestBase):
         if self.fix_patch_result.all_count == 0:
             self.valid = False
             self.error_msg = (
-                f"There is no valid fix patch result: {self.short_report()}"
+                f"There is no valid fix patch result: {self.short_report()}. self.fix_patch_result: {self.fix_patch_result}"
             )
             return (self.valid, self.error_msg)
 

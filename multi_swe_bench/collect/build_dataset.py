@@ -174,9 +174,11 @@ def main(
         raw_dataset = {}
 
     failed_number = max([pr["number"] for pr in filtered_prs_with_issues])
+    print(f"failed_number: {failed_number}")
 
     log_file = out_dir / f"{org}__{repo}_raw_dataset.log"
     last_failed_number = get_failed_number(log_file)
+    print(f"last_failed_number: {last_failed_number}")
     if last_failed_number is not None:
         failed_number = last_failed_number
 
@@ -186,12 +188,14 @@ def main(
     with open(
         out_dir / f"{org}__{repo}_raw_dataset.jsonl", "a", encoding="utf-8"
     ) as file:
+        print(f"Building dataset for {len(filtered_prs_with_issues)} PRs...")
         for pr in tqdm(filtered_prs_with_issues, desc="Building Dataset"):
             if (
                 pr["number"] in raw_dataset
-                or pr["number"] >= processed_number
+                or pr["number"] > processed_number
                 or pr["number"] > failed_number
             ):
+                print(f"Skipping PR {pr['number']} as it is already processed.")
                 continue
 
             for attempt in range(retry_attempts):

@@ -19,6 +19,7 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Dict, Literal, Optional
+import json
 
 from dataclasses_json import dataclass_json
 from tqdm import tqdm
@@ -455,6 +456,14 @@ class CliArgs:
                 except Exception as e:
                     self.logger.error(f"Error creating instance for {pr.id}: {e}")
 
+            self.logger.info(
+                f"self.patch_numbers {self.patch_numbers}. instances {json.dumps(instances[0].pr.number, default=str, indent=2)}"
+            )
+
+            self.logger.info(
+                f"instances[0].pr.number in self.patch_numbers {instances[0].pr.number in self.patch_numbers}"
+            )
+            
             self._instances = [
                 instance
                 for instance in instances
@@ -573,6 +582,9 @@ class CliArgs:
 
         if self.repo_dir and image.need_copy_code:
             copy_source_code(self.repo_dir, image, image_dir)
+            self.logger.info(
+                f"Copied source code for {image.image_full_name()} to {image_dir}"
+            )
 
         dockerfile_path = image_dir / image.dockerfile_name()
         dockerfile_path.parent.mkdir(parents=True, exist_ok=True)
@@ -682,11 +694,14 @@ class CliArgs:
         )
         instance_dir.mkdir(parents=True, exist_ok=True)
 
-        fix_patch_path = instance_dir.absolute() / "fix.patch"
+        fix_patch_path = instance_dir.absolute() / "fix_.patch"
+        self.logger.info(f"fix_patch_path: {fix_patch_path}")
+        self.logger.info(f"instance.dependency().fix_patch_path(): {instance.dependency().fix_patch_path()}")
         with open(fix_patch_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(self.patches[instance.pr.id].fix_patch)
 
         report_path = instance_dir / REPORT_FILE
+        self.logger.info(f"report_path: {report_path}")
         if report_path.exists():
             self.logger.info(
                 f"Report already exists for {instance.name()}, skipping..."

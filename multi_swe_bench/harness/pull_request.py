@@ -179,6 +179,7 @@ class PullRequest(PullRequestBase):
     fix_patch: str
     test_patch: str
     tag: str=""
+    prompt: Optional[str]= None
 
 
     def __post_init__(self):
@@ -196,6 +197,7 @@ class PullRequest(PullRequestBase):
             raise ValueError(f"Invalid fix_patch: {self.fix_patch}")
         if not isinstance(self.test_patch, str):
             raise ValueError(f"Invalid test_patch: {self.test_patch}")
+        self.prompt = f"Reimplement PR title: {self.title}, body: {self.body}"
 
     @classmethod
     def from_dict(cls, d: dict) -> "PullRequest":

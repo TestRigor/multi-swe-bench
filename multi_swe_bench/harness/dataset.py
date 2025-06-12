@@ -61,6 +61,7 @@ class Dataset(PullRequest):
             number=pr.number,
             state=pr.state,
             title=pr.title,
+            prompt=pr.prompt,
             body=pr.body,
             base=pr.base,
             resolved_issues=pr.resolved_issues,
